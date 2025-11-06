@@ -1,1 +1,93 @@
-<h1>Price Monitoring - Coming Soon</h1> 
+<!doctype html>
+<div class="panel links">
+<strong>Feed:</strong>
+<a href="./feed.json">JSON</a>
+<a href="./feed.xml">RSS</a>
+</div>
+
+
+<div class="panel">
+<h2 style="margin:4px 0 12px">Andamento ultimi 7 giorni</h2>
+<canvas id="chart"></canvas>
+</div>
+
+
+<div class="panel">
+<h2 style="margin:4px 0 12px">Deals recenti</h2>
+<table>
+<thead>
+<tr>
+<th>Data</th>
+<th>Titolo</th>
+<th>Prezzo</th>
+<th>Sconto</th>
+<th>Fonte</th>
+</tr>
+</thead>
+<tbody id="rows"></tbody>
+</table>
+</div>
+
+
+<footer>
+Generato automaticamente dal pipeline. Ultimo update: <span id="meta-ts">—</span>
+</footer>
+</div>
+
+
+<script>
+async function main(){
+const res = await fetch('./feed.json', {cache: 'no-store'}).catch(()=>null);
+if(!res || !res.ok){ document.getElementById('last-upd').textContent = 'Nessun feed disponibile'; return; }
+const feed = await res.json();
+const items = (feed.items||[]).sort((a,b)=>new Date(b.date)-new Date(a.date));
+
+
+// Meta
+document.getElementById('meta-ts').textContent = feed.generated_at || '—';
+document.getElementById('last-upd').textContent = items[0]?.date || feed.generated_at || '';
+
+
+// Tabella
+const fmt = (n)=> (n==null||n==='')? '—' : (typeof n==='number'? n.toLocaleString('it-IT',{minimumFractionDigits:2, maximumFractionDigits:2}) : n);
+const rows = document.getElementById('rows');
+rows.innerHTML = items.map(it=>{
+const p = it.price != null ? `€ ${fmt(it.price)}` : '—';
+const op = it.old_price != null ? `<span class="old">€ ${fmt(it.old_price)}</span>` : '';
+const disc = (it.discount_pct != null) ? `${fmt(it.discount_pct)}%` : (it.price!=null && it.old_price!=null ? `${Math.round((1-it.price/it.old_price)*100)}%` : '—');
+const src = it.source ? `<span class="chip">${it.source}</span>` : '';
+return `<tr>
+<td>${(new Date(it.date)).toLocaleString('it-IT')}</td>
+<td><a href="${it.url||'#'}" target="_blank" rel="noopener">${it.title||'(senza titolo)'}</a></td>
+<td class="price">${p} ${op}</td>
+<td>${disc}</td>
+<td class="src">${it.site||''} ${src}</td>
+</tr>`
+}).join('');
+
+
+// Chart: count per day (ultimi 7)
+const byDay = {};
+const now = new Date();
+for(let i=6;i>=0;i--){
+const d = new Date(now); d.setDate(now.getDate()-i);
+const k = d.toISOString().slice(0,10);
+byDay[k] = 0;
+}
+for(const it of items){
+const k = new Date(it.date).toISOString().slice(0,10);
+if(k in byDay) byDay[k]++;
+}
+const labels = Object.keys(byDay);
+const data = Object.values(byDay);
+const ctx = document.getElementById('chart').getContext('2d');
+new Chart(ctx, {
+type: 'line',
+data: { labels, datasets: [{ label: 'Deals', data }] },
+options: { responsive: true, maintainAspectRatio: false, plugins:{ legend:{ display:true } } }
+});
+}
+main();
+</script>
+</body>
+</html>

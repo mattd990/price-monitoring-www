@@ -1,0 +1,17 @@
+{
+  "generated_at": "2025-11-06T20:59:24.173695+00:00",
+  "count": 1,
+  "items": [
+    {
+      "id": "733acc2c7fc0",
+      "title": "Test deal",
+      "url": "https://example.com",
+      "price": 9.99,
+      "old_price": null,
+      "discount_pct": null,
+      "source": "demo",
+      "site": "demo",
+      "date": "2025-10-27T17:00:00+00:00"
+    }
+  ]
+}
